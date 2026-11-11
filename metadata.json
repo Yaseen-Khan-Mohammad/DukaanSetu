@@ -1,0 +1,6 @@
+{
+  "name": "DukaanSetu",
+  "description": "Connecting local shop owners with consumers and business buyers to buy quality near-expiry products at discounted prices, reducing waste and saving money.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
