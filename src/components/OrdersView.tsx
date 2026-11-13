@@ -1,6 +1,7 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency } from '../utils/dateUtils';
+import { resolveImageUrl } from '../assets/imageAssets';
 import {
   PackageCheck,
   Store,
@@ -169,7 +170,7 @@ export const OrdersView: React.FC = () => {
                           className="flex items-center gap-3 p-2 rounded-lg bg-stone-50 border border-stone-100 text-xs"
                         >
                           <img
-                            src={product.imageUrl}
+                            src={resolveImageUrl(product.imageUrl)}
                             alt={product.name}
                             className="w-10 h-10 rounded object-cover bg-white shrink-0 border border-stone-200"
                             referrerPolicy="no-referrer"

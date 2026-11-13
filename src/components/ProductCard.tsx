@@ -2,6 +2,7 @@ import React from 'react';
 import { Product } from '../types';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
+import { IMAGES, resolveImageUrl } from '../assets/imageAssets';
 import { ShoppingBag, Eye, MapPin, Store, AlertCircle } from 'lucide-react';
 
 interface ProductCardProps {
@@ -22,14 +23,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           onClick={() => setSelectedProduct(product)}
         >
           <img
-            src={product.imageUrl}
+            src={resolveImageUrl(product.imageUrl)}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-103"
             referrerPolicy="no-referrer"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.onerror = null;
-              target.src = '/src/assets/images/product_packaged_grocery_1794550482310.jpg';
+              target.src = IMAGES.packagedGrocery;
             }}
           />
 

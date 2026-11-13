@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
+import { resolveImageUrl } from '../assets/imageAssets';
 import { Product, UserRole } from '../types';
 import {
   Store,
@@ -347,7 +348,7 @@ export const ProfileView: React.FC = () => {
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={prod.imageUrl}
+                                  src={resolveImageUrl(prod.imageUrl)}
                                   alt={prod.name}
                                   className="w-10 h-10 rounded object-cover border border-stone-200 shrink-0"
                                   referrerPolicy="no-referrer"

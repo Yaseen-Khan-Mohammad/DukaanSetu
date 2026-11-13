@@ -1,6 +1,7 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
+import { IMAGES, resolveImageUrl } from '../assets/imageAssets';
 import {
   ShoppingBag,
   Trash2,
@@ -82,14 +83,14 @@ export const CartView: React.FC = () => {
                 >
                   <div className="flex items-center gap-4">
                     <img
-                      src={product.imageUrl}
+                      src={resolveImageUrl(product.imageUrl)}
                       alt={product.name}
                       className="w-20 h-20 rounded-lg object-cover bg-stone-100 border border-stone-200 shrink-0"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
-                        target.src = '/src/assets/images/product_packaged_grocery_1794550482310.jpg';
+                        target.src = IMAGES.packagedGrocery;
                       }}
                     />
 

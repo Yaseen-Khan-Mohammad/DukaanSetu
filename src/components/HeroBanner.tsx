@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { IMAGES } from '../assets/imageAssets';
 import { ArrowRight, Sparkles, MapPin, ShieldCheck, Clock } from 'lucide-react';
 
 export const HeroBanner: React.FC = () => {
@@ -75,7 +76,7 @@ export const HeroBanner: React.FC = () => {
           <div className="lg:col-span-5">
             <div className="relative rounded-2xl overflow-hidden shadow-md border border-[#F0D9DF] bg-white group">
               <img
-                src="/src/assets/images/hero_grocery_market_1794550479421.jpg"
+                src={IMAGES.heroGroceryMarket}
                 alt="Local grocery marketplace store shelves with fresh produce and pantry goods"
                 className="w-full h-72 sm:h-88 lg:h-96 object-cover transition duration-300 group-hover:scale-102"
                 referrerPolicy="no-referrer"

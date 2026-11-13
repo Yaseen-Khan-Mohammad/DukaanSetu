@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { ProductCategory } from '../types';
+import { IMAGES } from '../assets/imageAssets';
 import {
   Store,
   Upload,
@@ -21,11 +22,11 @@ const CATEGORIES: ProductCategory[] = [
 ];
 
 const PRESET_IMAGES = [
-  { label: 'Fresh Milk & Dairy', url: '/src/assets/images/product_fresh_milk_dairy_1794550479400.jpg' },
-  { label: 'Artisan Bakery Bread', url: '/src/assets/images/product_bakery_artisan_bread_1794550480367.jpg' },
-  { label: 'Farm Fresh Fruits & Produce', url: '/src/assets/images/product_fresh_fruits_basket_1794550480653.jpg' },
-  { label: 'Packaged Grocery & Grains', url: '/src/assets/images/product_packaged_grocery_1794550482310.jpg' },
-  { label: 'Store General Merchandise', url: '/src/assets/images/hero_grocery_market_1794550479421.jpg' },
+  { label: 'Fresh Milk & Dairy', url: IMAGES.freshMilkDairy },
+  { label: 'Artisan Bakery Bread', url: IMAGES.bakeryArtisanBread },
+  { label: 'Farm Fresh Fruits & Produce', url: IMAGES.freshFruitsBasket },
+  { label: 'Packaged Grocery & Grains', url: IMAGES.packagedGrocery },
+  { label: 'Store General Merchandise', url: IMAGES.heroGroceryMarket },
 ];
 
 export const SellProductPage: React.FC = () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
+import { IMAGES, resolveImageUrl } from '../assets/imageAssets';
 import {
   X,
   ShoppingBag,
@@ -69,14 +70,14 @@ export const ProductDetailModal: React.FC = () => {
           <div className="md:col-span-5 space-y-3">
             <div className="aspect-[4/3] rounded-xl overflow-hidden bg-stone-100 border border-stone-200 relative">
               <img
-                src={selectedProduct.imageUrl}
+                src={resolveImageUrl(selectedProduct.imageUrl)}
                 alt={selectedProduct.name}
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
-                  target.src = '/src/assets/images/product_packaged_grocery_1794550482310.jpg';
+                  target.src = IMAGES.packagedGrocery;
                 }}
               />
               <div className="absolute top-3 left-3 bg-[#B8556D] text-white text-xs font-bold px-2.5 py-1 rounded shadow-xs">
