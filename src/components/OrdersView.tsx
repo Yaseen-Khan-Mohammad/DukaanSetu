@@ -1,20 +1,34 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency } from '../utils/dateUtils';
-import { 
-  PackageCheck, 
-  Store, 
-  MapPin, 
-  Phone, 
-  Clock, 
-  ArrowLeft, 
+import {
+  PackageCheck,
+  Store,
+  Phone,
+  ArrowLeft,
   ShoppingBag,
-  CheckCircle,
-  Truck
+  Truck,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const OrdersView: React.FC = () => {
-  const { orders, setActiveView, addToCart } = useMarketplace();
+  const { orders, products, setActiveView, addToCart, updateOrderStatus, showToast } = useMarketplace();
+
+  const handleReorder = (items: typeof orders[number]['items']) => {
+    let addedAny = false;
+    items.forEach((item) => {
+      const liveProduct = products.find((p) => p.id === item.product.id);
+      if (liveProduct && liveProduct.quantity > 0) {
+        addToCart(liveProduct, 1);
+        addedAny = true;
+      }
+    });
+    if (addedAny) {
+      setActiveView('cart');
+    } else {
+      showToast('None of those items are currently in stock', 'warning');
+    }
+  };
 
   if (orders.length === 0) {
     return (
@@ -64,7 +78,6 @@ export const OrdersView: React.FC = () => {
           </span>
         </div>
 
-        {/* Orders List */}
         <div className="space-y-6">
           {orders.map((order) => {
             const formattedDate = new Date(order.orderDate).toLocaleDateString('en-IN', {
@@ -80,7 +93,6 @@ export const OrdersView: React.FC = () => {
                 key={order.id}
                 className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-xs hover:border-stone-300 transition"
               >
-                {/* Order Top Ribbon */}
                 <div className="bg-stone-50/70 p-4 border-b border-stone-200 flex flex-wrap items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-[#17212F] font-mono">{order.orderNumber}</span>
@@ -89,7 +101,6 @@ export const OrdersView: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {/* Status Badge */}
                     <span
                       className={`px-2.5 py-1 rounded text-[11px] font-bold ${
                         order.status === 'Delivered'
@@ -108,9 +119,7 @@ export const OrdersView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Order Body */}
                 <div className="p-5 space-y-4">
-                  {/* Shop & Fulfillment Info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b border-stone-100 text-xs">
                     <div className="space-y-1">
                       <span className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider block">
@@ -149,7 +158,6 @@ export const OrdersView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Items list */}
                   <div className="space-y-2">
                     <span className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider block">
                       Ordered Products
@@ -177,24 +185,32 @@ export const OrdersView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Footer Savings strip */}
-                  <div className="pt-2 flex flex-wrap items-center justify-between text-xs border-t border-stone-100">
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-stone-100">
                     <span className="text-emerald-700 font-semibold">
                       You saved {formatCurrency(order.savings)} on this purchase through DukaanSetu.
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Re-add items
-                        order.items.forEach((item) => addToCart(item.product, 1));
-                        setActiveView('cart');
-                      }}
-                      className="text-xs font-semibold text-[#B8556D] hover:underline flex items-center gap-1"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Re-order Items</span>
-                    </button>
+                    <div className="flex items-center gap-4">
+                      {order.status !== 'Delivered' && (
+                        <button
+                          type="button"
+                          onClick={() => updateOrderStatus(order.id, 'Delivered')}
+                          className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Mark Collected / Delivered</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleReorder(order.items)}
+                        className="text-xs font-semibold text-[#B8556D] hover:underline flex items-center gap-1"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Re-order Items</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

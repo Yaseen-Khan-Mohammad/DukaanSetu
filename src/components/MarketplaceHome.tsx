@@ -4,22 +4,17 @@ import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { SearchFilterBar } from './SearchFilterBar';
 import { ProductCard } from './ProductCard';
-import { ShoppingBag, TrendingUp, Sparkles, Store, CheckCircle, RotateCcw } from 'lucide-react';
+import { ShoppingBag, Sparkles, RotateCcw } from 'lucide-react';
 
 export const MarketplaceHome: React.FC = () => {
   const { filteredProducts, resetFilters, filters } = useMarketplace();
 
   return (
     <div className="min-h-screen bg-[#FAFAFB]">
-      {/* 1. Homepage Banner */}
       <HeroBanner />
-
-      {/* 2. Product Categories */}
       <CategoryBar />
 
-      {/* 3. Featured Clearance Deals & Market Section */}
       <section id="products-section" className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Title */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#B8556D] uppercase tracking-wider mb-1">
@@ -48,10 +43,8 @@ export const MarketplaceHome: React.FC = () => {
           </div>
         </div>
 
-        {/* Search & Filter Component */}
         <SearchFilterBar />
 
-        {/* Product Cards Grid */}
         {filteredProducts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center space-y-4 shadow-xs">
             <div className="w-14 h-14 rounded-full bg-[#FAF0F2] text-[#B8556D] flex items-center justify-center mx-auto">
@@ -78,7 +71,6 @@ export const MarketplaceHome: React.FC = () => {
           </div>
         )}
 
-        {/* Impact Metric Strip */}
         <div className="mt-14 p-6 sm:p-8 bg-[#FAF0F2] rounded-2xl border border-[#F0D9DF] flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center md:text-left">
             <span className="text-xs font-bold text-[#B8556D] uppercase tracking-wider">

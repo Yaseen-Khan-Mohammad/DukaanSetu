@@ -17,27 +17,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <div className="bg-white rounded-xl border border-stone-200 overflow-hidden flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
       <div>
-        {/* Product Image Frame */}
-        <div className="relative aspect-[4/3] bg-stone-100 overflow-hidden cursor-pointer" onClick={() => setSelectedProduct(product)}>
+        <div
+          className="relative aspect-[4/3] bg-stone-100 overflow-hidden cursor-pointer"
+          onClick={() => setSelectedProduct(product)}
+        >
           <img
             src={product.imageUrl}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-103"
             referrerPolicy="no-referrer"
             onError={(e) => {
-              // Styled graceful fallback
               const target = e.target as HTMLImageElement;
               target.onerror = null;
-              target.src = '/src/assets/images/product_packaged_grocery_1794418652852.jpg';
+              target.src = '/src/assets/images/product_packaged_grocery_1794550482310.jpg';
             }}
           />
 
-          {/* Discount Ribbon in Smoky Rose */}
           <div className="absolute top-2.5 left-2.5 bg-[#B8556D] text-white px-2.5 py-0.5 text-xs font-bold rounded shadow-xs tracking-tight">
             {product.discountPercent}% OFF
           </div>
 
-          {/* Expiry Urgency Ribbon */}
           <div
             className={`absolute top-2.5 right-2.5 px-2 py-0.5 text-[11px] font-semibold rounded backdrop-blur-xs ${
               expiryInfo.isUrgent
@@ -49,9 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         </div>
 
-        {/* Content Body */}
         <div className="p-4 space-y-2">
-          {/* Category & Distance Unboxed Metadata */}
           <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
             <span>{product.category}</span>
             <span aria-hidden="true">·</span>
@@ -61,7 +58,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </span>
           </div>
 
-          {/* Product Title */}
           <h3
             onClick={() => setSelectedProduct(product)}
             className="text-sm sm:text-base font-bold text-[#17212F] line-clamp-1 hover:text-[#B8556D] cursor-pointer transition-colors"
@@ -70,7 +66,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {product.name}
           </h3>
 
-          {/* Pricing Block */}
           <div className="flex items-baseline gap-2 pt-0.5">
             <span className="text-lg sm:text-xl font-extrabold text-[#17212F] font-mono tabular-nums">
               {formatCurrency(product.discountedPrice)}
@@ -83,7 +78,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </span>
           </div>
 
-          {/* Store Name & Stock Info */}
           <div className="pt-1.5 border-t border-stone-100 space-y-1 text-xs">
             <div className="flex items-center justify-between text-stone-600">
               <span className="flex items-center gap-1.5 truncate max-w-[70%]" title={product.shopName}>
@@ -117,7 +111,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </div>
 
-      {/* Action Footer */}
       <div className="p-4 pt-0 grid grid-cols-2 gap-2 mt-2">
         <button
           type="button"

@@ -1,32 +1,31 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { ProductCategory } from '../types';
-import { 
-  Apple, 
-  Milk, 
-  Croissant, 
-  Package, 
-  Coffee, 
-  Sparkles, 
-  Layers 
+import {
+  Apple,
+  Milk,
+  Croissant,
+  Package,
+  Coffee,
+  Sparkles,
+  Layers,
 } from 'lucide-react';
 
 interface CategoryItem {
   id: ProductCategory | 'All';
   name: string;
   icon: React.ComponentType<{ className?: string }>;
-  tagline: string;
 }
 
 const CATEGORIES: CategoryItem[] = [
-  { id: 'All', name: 'All Deals', icon: Layers, tagline: 'Explore all near-expiry discounts' },
-  { id: 'Fruits & Vegetables', name: 'Fruits & Vegetables', icon: Apple, tagline: 'Fresh farm harvest' },
-  { id: 'Dairy Products', name: 'Dairy Products', icon: Milk, tagline: 'Milk, curd & paneer' },
-  { id: 'Bakery Items', name: 'Bakery Items', icon: Croissant, tagline: 'Artisan breads & buns' },
-  { id: 'Packaged Foods', name: 'Packaged Foods', icon: Package, tagline: 'Grains, dal & spices' },
-  { id: 'Beverages', name: 'Beverages', icon: Coffee, tagline: 'Juices, teas & drinks' },
-  { id: 'Household Essentials', name: 'Household Essentials', icon: Sparkles, tagline: 'Cleaners & hygiene' },
-  { id: 'Others', name: 'Others', icon: Package, tagline: 'Specialty pantry' },
+  { id: 'All', name: 'All Deals', icon: Layers },
+  { id: 'Fruits & Vegetables', name: 'Fruits & Vegetables', icon: Apple },
+  { id: 'Dairy Products', name: 'Dairy Products', icon: Milk },
+  { id: 'Bakery Items', name: 'Bakery Items', icon: Croissant },
+  { id: 'Packaged Foods', name: 'Packaged Foods', icon: Package },
+  { id: 'Beverages', name: 'Beverages', icon: Coffee },
+  { id: 'Household Essentials', name: 'Household Essentials', icon: Sparkles },
+  { id: 'Others', name: 'Others', icon: Package },
 ];
 
 export const CategoryBar: React.FC = () => {
@@ -40,7 +39,6 @@ export const CategoryBar: React.FC = () => {
     }
   };
 
-  // Calculate count per category
   const getCount = (catName: string) => {
     if (catName === 'All') return products.length;
     return products.filter((p) => p.category === catName).length;
@@ -67,7 +65,6 @@ export const CategoryBar: React.FC = () => {
           )}
         </div>
 
-        {/* Categories Grid / Horizontal Scroll */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;

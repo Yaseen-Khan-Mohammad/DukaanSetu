@@ -1,27 +1,27 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
-import { 
-  ShoppingBag, 
-  Trash2, 
-  Plus, 
-  Minus, 
-  ArrowRight, 
-  ArrowLeft, 
-  ShieldCheck, 
+import {
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck,
   Store,
-  Clock
+  Clock,
 } from 'lucide-react';
 
 export const CartView: React.FC = () => {
-  const { 
-    cart, 
-    updateQuantity, 
-    removeFromCart, 
-    clearCart, 
-    cartTotal, 
-    cartSavings, 
-    setActiveView 
+  const {
+    cart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+    cartTotal,
+    cartSavings,
+    setActiveView,
   } = useMarketplace();
 
   if (cart.length === 0) {
@@ -50,7 +50,6 @@ export const CartView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAFAFB] py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
         <button
           type="button"
           onClick={() => setActiveView('marketplace')}
@@ -72,7 +71,6 @@ export const CartView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Cart Items List */}
           <div className="lg:col-span-8 space-y-3">
             {cart.map(({ product, quantity }) => {
               const expiryInfo = formatExpiryDisplay(product.expiryDate);
@@ -82,7 +80,6 @@ export const CartView: React.FC = () => {
                   key={product.id}
                   className="bg-white rounded-xl border border-stone-200 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs"
                 >
-                  {/* Left: Thumbnail & Details */}
                   <div className="flex items-center gap-4">
                     <img
                       src={product.imageUrl}
@@ -92,7 +89,7 @@ export const CartView: React.FC = () => {
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.onerror = null;
-                        target.src = '/src/assets/images/product_packaged_grocery_1794418652852.jpg';
+                        target.src = '/src/assets/images/product_packaged_grocery_1794550482310.jpg';
                       }}
                     />
 
@@ -116,9 +113,7 @@ export const CartView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Right: Quantity Adjuster & Line Pricing */}
                   <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100">
-                    {/* Stepper */}
                     <div className="flex items-center border border-stone-300 rounded-lg overflow-hidden bg-white">
                       <button
                         type="button"
@@ -142,7 +137,6 @@ export const CartView: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Pricing */}
                     <div className="text-right">
                       <div className="text-base font-extrabold text-[#17212F] font-mono tabular-nums">
                         {formatCurrency(product.discountedPrice * quantity)}
@@ -152,7 +146,6 @@ export const CartView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Remove */}
                     <button
                       type="button"
                       onClick={() => removeFromCart(product.id)}
@@ -167,7 +160,6 @@ export const CartView: React.FC = () => {
             })}
           </div>
 
-          {/* Cart Summary */}
           <div className="lg:col-span-4 bg-white rounded-xl border border-stone-200 p-6 space-y-5 shadow-xs sticky top-24">
             <h2 className="text-base font-bold text-[#17212F] pb-3 border-b border-stone-100">
               Order Summary
@@ -214,7 +206,7 @@ export const CartView: React.FC = () => {
 
             <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-[11px] text-stone-500">
               <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>Simulated demo checkout. Pay at counter or cash on delivery.</span>
+              <span>Pay at counter or cash on delivery.</span>
             </div>
           </div>
         </div>

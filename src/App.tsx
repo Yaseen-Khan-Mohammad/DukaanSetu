@@ -16,7 +16,6 @@ import { ToastContainer } from './components/ToastContainer';
 const AppContent: React.FC = () => {
   const { currentUser, activeView } = useMarketplace();
 
-  // If user is not signed in, show Auth Page as requested
   if (!currentUser) {
     return (
       <>
@@ -41,7 +40,6 @@ const AppContent: React.FC = () => {
 
       <Footer />
 
-      {/* Modals & Overlays */}
       <ProductDetailModal />
       <OrderSuccessModal />
       <ToastContainer />

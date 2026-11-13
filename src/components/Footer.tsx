@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
-import { Store, ShieldCheck, HeartHandshake, MapPin, Mail, Phone } from 'lucide-react';
+import { Store, ShieldCheck, HeartHandshake, MapPin, Mail } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const { setActiveView, setFilters } = useMarketplace();
@@ -21,7 +21,6 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="bg-[#17212F] text-stone-300 text-xs border-t border-stone-800">
-      {/* Value Pillars Strip */}
       <div className="border-b border-stone-800/80 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-start gap-3">
@@ -62,9 +61,7 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-12 gap-8">
-        {/* Brand Summary */}
         <div className="md:col-span-4 space-y-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-white text-[#17212F] flex items-center justify-center font-bold text-sm">
@@ -91,7 +88,6 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Links */}
         <div className="md:col-span-2 space-y-3">
           <h4 className="font-bold text-white text-xs uppercase tracking-wider">Navigation</h4>
           <ul className="space-y-2">
@@ -134,7 +130,6 @@ export const Footer: React.FC = () => {
           </ul>
         </div>
 
-        {/* Categories */}
         <div className="md:col-span-3 space-y-3">
           <h4 className="font-bold text-white text-xs uppercase tracking-wider">Top Categories</h4>
           <ul className="space-y-2">
@@ -186,7 +181,6 @@ export const Footer: React.FC = () => {
           </ul>
         </div>
 
-        {/* For Shop Owners */}
         <div className="md:col-span-3 space-y-3">
           <h4 className="font-bold text-white text-xs uppercase tracking-wider">For Store Owners</h4>
           <p className="text-stone-400 text-xs">
@@ -207,7 +201,6 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Legal / Copyright */}
       <div className="border-t border-stone-800/80 py-4 bg-[#121a25]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-stone-500">
           <p>© 2026 DukaanSetu Retail Technologies Private Limited. All rights reserved.</p>

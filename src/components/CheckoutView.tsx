@@ -2,30 +2,29 @@ import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { FulfillmentType, PaymentMethod } from '../types';
 import { formatCurrency } from '../utils/dateUtils';
-import { 
-  ArrowLeft, 
-  Store, 
-  Truck, 
-  Banknote, 
-  QrCode, 
-  MapPin, 
-  Phone, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  Store,
+  Truck,
+  Banknote,
+  QrCode,
+  MapPin,
+  Phone,
+  CheckCircle2,
   ShieldCheck,
-  Clock
+  Clock,
 } from 'lucide-react';
 
 export const CheckoutView: React.FC = () => {
-  const { 
-    currentUser, 
-    cart, 
-    cartTotal, 
-    cartSavings, 
-    createOrder, 
-    setActiveView 
+  const {
+    currentUser,
+    cart,
+    cartTotal,
+    cartSavings,
+    createOrder,
+    setActiveView,
   } = useMarketplace();
 
-  // Form states
   const [customerName, setCustomerName] = useState(currentUser?.name || '');
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '+91 98450 12345');
   const [customerEmail, setCustomerEmail] = useState(currentUser?.email || '');
@@ -37,11 +36,9 @@ export const CheckoutView: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash_pickup');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Delivery fee calculation
   const deliveryFee = fulfillmentType === 'delivery' ? 30 : 0;
   const finalTotal = cartTotal + deliveryFee;
 
-  // Primary shop from first item
   const primaryShopName = cart[0]?.product.shopName || 'Krishna Daily Needs & Dairy';
   const primaryShopPhone = cart[0]?.product.shopPhone || '+91 97312 88450';
   const primaryShopAddress = cart[0]?.product.shopAddress || '100 Feet Road, Indiranagar, Bengaluru';
@@ -72,7 +69,7 @@ export const CheckoutView: React.FC = () => {
       setIsSubmitting(false);
       setActiveView('orders');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 600);
+    }, 350);
   };
 
   if (cart.length === 0) {
@@ -109,9 +106,7 @@ export const CheckoutView: React.FC = () => {
         </h1>
 
         <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Form Details */}
           <div className="md:col-span-7 space-y-6">
-            {/* 1. Fulfillment Option */}
             <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-3 shadow-xs">
               <h2 className="text-sm font-bold text-[#17212F] uppercase tracking-wider">
                 1. Select Fulfillment Mode
@@ -161,7 +156,6 @@ export const CheckoutView: React.FC = () => {
                 </button>
               </div>
 
-              {/* Merchant Pickup Address Notice */}
               {fulfillmentType === 'pickup' && (
                 <div className="p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs space-y-1">
                   <div className="font-semibold text-[#17212F] flex items-center gap-1.5">
@@ -181,7 +175,6 @@ export const CheckoutView: React.FC = () => {
               )}
             </div>
 
-            {/* 2. Customer Contact & Address */}
             <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-4 shadow-xs">
               <h2 className="text-sm font-bold text-[#17212F] uppercase tracking-wider">
                 2. Contact & Delivery Details
@@ -243,7 +236,6 @@ export const CheckoutView: React.FC = () => {
               )}
             </div>
 
-            {/* 3. Payment Method */}
             <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-3 shadow-xs">
               <h2 className="text-sm font-bold text-[#17212F] uppercase tracking-wider">
                 3. Payment Selection
@@ -317,7 +309,6 @@ export const CheckoutView: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Order Summary & Place Button */}
           <div className="md:col-span-5 bg-white rounded-xl border border-stone-200 p-6 space-y-5 shadow-xs sticky top-24">
             <h2 className="text-sm font-bold text-[#17212F] uppercase tracking-wider pb-2 border-b border-stone-100">
               Order Items ({cart.length})

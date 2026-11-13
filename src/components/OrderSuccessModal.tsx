@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency } from '../utils/dateUtils';
-import { CheckCircle, Store, Phone, MapPin, X, ArrowRight, PackageCheck } from 'lucide-react';
+import { CheckCircle, Store, Phone, PackageCheck } from 'lucide-react';
 
 export const OrderSuccessModal: React.FC = () => {
   const { lastPlacedOrder, setLastPlacedOrder, setActiveView } = useMarketplace();
@@ -9,8 +9,11 @@ export const OrderSuccessModal: React.FC = () => {
   if (!lastPlacedOrder) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div 
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+      onClick={() => setLastPlacedOrder(null)}
+    >
+      <div
         className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-stone-200 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >

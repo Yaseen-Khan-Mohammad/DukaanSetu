@@ -15,10 +15,8 @@ export const HeroBanner: React.FC = () => {
 
   return (
     <section className="relative overflow-hidden bg-[#FAF0F2] border-b border-[#F0D9DF]">
-      {/* 2-Column Split: Editorial Commercial Showcase */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          {/* Left Column: Heading, Supporting Text, and Action */}
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-[#F0D9DF] text-xs font-semibold text-[#B8556D] shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#B8556D]" />
@@ -36,7 +34,6 @@ export const HeroBanner: React.FC = () => {
               </p>
             </div>
 
-            {/* CTAs */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 type="button"
@@ -59,7 +56,6 @@ export const HeroBanner: React.FC = () => {
               </button>
             </div>
 
-            {/* Trust points */}
             <div className="pt-4 grid grid-cols-3 gap-3 border-t border-[#F0D9DF]/80">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
@@ -76,11 +72,10 @@ export const HeroBanner: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Authentic Retail Grocery Storefront Photography */}
           <div className="lg:col-span-5">
             <div className="relative rounded-2xl overflow-hidden shadow-md border border-[#F0D9DF] bg-white group">
               <img
-                src="/src/assets/images/hero_grocery_market_1794418650248.jpg"
+                src="/src/assets/images/hero_grocery_market_1794550479421.jpg"
                 alt="Local grocery marketplace store shelves with fresh produce and pantry goods"
                 className="w-full h-72 sm:h-88 lg:h-96 object-cover transition duration-300 group-hover:scale-102"
                 referrerPolicy="no-referrer"

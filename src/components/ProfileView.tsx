@@ -2,40 +2,36 @@ import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
 import { Product, UserRole } from '../types';
-import { 
-  User, 
-  Store, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  LogOut, 
-  Edit3, 
-  Trash2, 
-  PlusCircle, 
-  Save, 
+import {
+  Store,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  LogOut,
+  Edit3,
+  Trash2,
+  PlusCircle,
+  Save,
   X,
   PackageCheck,
-  CheckCircle2,
-  AlertCircle
 } from 'lucide-react';
 
 export const ProfileView: React.FC = () => {
-  const { 
-    currentUser, 
-    setCurrentUser, 
-    products, 
-    updateProduct, 
-    deleteProduct, 
-    setActiveView, 
+  const {
+    currentUser,
+    setCurrentUser,
+    products,
+    updateProduct,
+    deleteProduct,
+    setActiveView,
     signOut,
     showToast,
-    quickSwitchUser
+    quickSwitchUser,
   } = useMarketplace();
 
   const [activeTab, setActiveTab] = useState<'info' | 'listings'>('info');
 
-  // Edit Profile modal/state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
@@ -45,15 +41,26 @@ export const ProfileView: React.FC = () => {
   const [shopAddress, setShopAddress] = useState(currentUser?.shopAddress || '');
   const [savedAddress, setSavedAddress] = useState(currentUser?.savedAddress || '');
 
-  // Edit Product Listing state
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editStock, setEditStock] = useState<number>(0);
 
-  // Shop Owner's listings: all products matching their shopOwnerId or all if owner
   const myListings = products.filter(
-    (p) => (currentUser?.id && p.shopOwnerId === currentUser.id) || (currentUser?.role === 'shop_owner' && p.shopName.includes(currentUser.shopName || 'Krishna'))
+    (p) =>
+      (currentUser?.id && p.shopOwnerId === currentUser.id) ||
+      (currentUser?.role === 'shop_owner' && p.shopName.includes(currentUser.shopName || 'Krishna'))
   );
+
+  const handleOpenEditProfile = () => {
+    setName(currentUser?.name || '');
+    setEmail(currentUser?.email || '');
+    setPhone(currentUser?.phone || '');
+    setRole(currentUser?.role || 'individual');
+    setShopName(currentUser?.shopName || '');
+    setShopAddress(currentUser?.shopAddress || '');
+    setSavedAddress(currentUser?.savedAddress || '');
+    setIsEditingProfile(true);
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,13 +68,13 @@ export const ProfileView: React.FC = () => {
 
     const updatedUser = {
       ...currentUser,
-      name,
-      email,
-      phone,
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
       role,
-      shopName: role === 'shop_owner' ? shopName : undefined,
-      shopAddress: role === 'shop_owner' ? shopAddress : undefined,
-      savedAddress,
+      shopName: role === 'shop_owner' || role === 'business_buyer' ? shopName.trim() : undefined,
+      shopAddress: role === 'shop_owner' || role === 'business_buyer' ? shopAddress.trim() : undefined,
+      savedAddress: savedAddress.trim(),
     };
 
     setCurrentUser(updatedUser);
@@ -81,10 +88,18 @@ export const ProfileView: React.FC = () => {
     setEditStock(prod.quantity);
   };
 
-  const handleSaveProductEdit = (productId: string) => {
-    updateProduct(productId, {
-      discountedPrice: editPrice,
-      quantity: editStock,
+  const handleSaveProductEdit = (prod: Product) => {
+    if (editPrice <= 0 || editPrice >= prod.originalPrice) {
+      showToast(`Discounted price must be between ₹1 and ₹${prod.originalPrice - 1}`, 'warning');
+      return;
+    }
+    if (editStock < 0) {
+      showToast('Stock quantity cannot be negative', 'warning');
+      return;
+    }
+    updateProduct(prod.id, {
+      discountedPrice: Math.round(editPrice),
+      quantity: Math.round(editStock),
     });
     setEditingProductId(null);
   };
@@ -92,7 +107,6 @@ export const ProfileView: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAFAFB] py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Top Header Card */}
         <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-xs">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -126,7 +140,16 @@ export const ProfileView: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={() => setIsEditingProfile(true)}
+                onClick={() => setActiveView('orders')}
+                className="px-4 py-2 text-xs font-semibold rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 transition flex items-center gap-1.5"
+              >
+                <PackageCheck className="w-3.5 h-3.5" />
+                <span>My Orders</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenEditProfile}
                 className="px-4 py-2 text-xs font-semibold rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50 transition flex items-center gap-1.5"
               >
                 <Edit3 className="w-3.5 h-3.5" />
@@ -144,9 +167,8 @@ export const ProfileView: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Demo Switcher helper */}
           <div className="mt-6 pt-4 border-t border-stone-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <span className="text-stone-500 font-medium">Test app with different account personas:</span>
+            <span className="text-stone-500 font-medium">Switch account persona:</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -173,7 +195,6 @@ export const ProfileView: React.FC = () => {
           </div>
         </div>
 
-        {/* Tabs: Account Details vs My Store Listings */}
         <div className="flex border-b border-stone-200 gap-4">
           <button
             type="button"
@@ -201,7 +222,6 @@ export const ProfileView: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab 1: Account Details */}
         {activeTab === 'info' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-xl border border-stone-200 p-6 space-y-4 shadow-xs">
@@ -268,7 +288,6 @@ export const ProfileView: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 2: My Listings (Manage, Edit, Remove Products) */}
         {activeTab === 'listings' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -348,6 +367,8 @@ export const ProfileView: React.FC = () => {
                               {isEditingThis ? (
                                 <input
                                   type="number"
+                                  min={1}
+                                  max={prod.originalPrice - 1}
                                   value={editPrice}
                                   onChange={(e) => setEditPrice(Number(e.target.value))}
                                   className="w-20 px-2 py-1 text-xs border border-stone-300 rounded font-mono"
@@ -361,6 +382,7 @@ export const ProfileView: React.FC = () => {
                               {isEditingThis ? (
                                 <input
                                   type="number"
+                                  min={0}
                                   value={editStock}
                                   onChange={(e) => setEditStock(Number(e.target.value))}
                                   className="w-16 px-2 py-1 text-xs border border-stone-300 rounded font-mono"
@@ -382,7 +404,7 @@ export const ProfileView: React.FC = () => {
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     type="button"
-                                    onClick={() => handleSaveProductEdit(prod.id)}
+                                    onClick={() => handleSaveProductEdit(prod)}
                                     className="p-1.5 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded"
                                     title="Save"
                                   >
@@ -429,10 +451,15 @@ export const ProfileView: React.FC = () => {
           </div>
         )}
 
-        {/* Edit Profile Modal */}
         {isEditingProfile && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-stone-200">
+          <div
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+            onClick={() => setIsEditingProfile(false)}
+          >
+            <div
+              className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-stone-200"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between pb-3 border-b border-stone-100 mb-4">
                 <h3 className="text-base font-bold text-[#17212F]">Edit Profile</h3>
                 <button
@@ -491,10 +518,12 @@ export const ProfileView: React.FC = () => {
                   </select>
                 </div>
 
-                {role === 'shop_owner' && (
+                {(role === 'shop_owner' || role === 'business_buyer') && (
                   <>
                     <div>
-                      <label className="block font-semibold text-[#17212F] mb-1">Shop / Store Name</label>
+                      <label className="block font-semibold text-[#17212F] mb-1">
+                        {role === 'shop_owner' ? 'Shop / Store Name' : 'Business Name'}
+                      </label>
                       <input
                         type="text"
                         value={shopName}
@@ -503,7 +532,9 @@ export const ProfileView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block font-semibold text-[#17212F] mb-1">Shop Address</label>
+                      <label className="block font-semibold text-[#17212F] mb-1">
+                        {role === 'shop_owner' ? 'Shop Address' : 'Business Address'}
+                      </label>
                       <input
                         type="text"
                         value={shopAddress}

@@ -1,23 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { formatCurrency, formatExpiryDisplay } from '../utils/dateUtils';
-import { 
-  X, 
-  ShoppingBag, 
-  Zap, 
-  MapPin, 
-  Store, 
-  Phone, 
-  ShieldCheck, 
-  Clock, 
-  CheckCircle,
+import {
+  X,
+  ShoppingBag,
+  Zap,
+  MapPin,
+  Store,
+  Phone,
+  ShieldCheck,
+  Clock,
   Plus,
-  Minus
+  Minus,
 } from 'lucide-react';
 
 export const ProductDetailModal: React.FC = () => {
   const { selectedProduct, setSelectedProduct, addToCart, setActiveView } = useMarketplace();
   const [qty, setQty] = useState(1);
+
+  useEffect(() => {
+    setQty(1);
+  }, [selectedProduct?.id]);
 
   if (!selectedProduct) return null;
 
@@ -26,6 +29,7 @@ export const ProductDetailModal: React.FC = () => {
 
   const handleAddToCart = () => {
     addToCart(selectedProduct, qty);
+    setSelectedProduct(null);
   };
 
   const handleBuyNow = () => {
@@ -36,12 +40,14 @@ export const ProductDetailModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-      <div 
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+      onClick={() => setSelectedProduct(null)}
+    >
+      <div
         className="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-200 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50/50">
           <div className="flex items-center gap-2 text-xs font-semibold text-stone-500 uppercase tracking-wider">
             <span>{selectedProduct.category}</span>
@@ -59,9 +65,7 @@ export const ProductDetailModal: React.FC = () => {
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 max-h-[80vh] overflow-y-auto">
-          {/* Image & Quick badges */}
           <div className="md:col-span-5 space-y-3">
             <div className="aspect-[4/3] rounded-xl overflow-hidden bg-stone-100 border border-stone-200 relative">
               <img
@@ -72,7 +76,7 @@ export const ProductDetailModal: React.FC = () => {
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
-                  target.src = '/src/assets/images/product_packaged_grocery_1794418652852.jpg';
+                  target.src = '/src/assets/images/product_packaged_grocery_1794550482310.jpg';
                 }}
               />
               <div className="absolute top-3 left-3 bg-[#B8556D] text-white text-xs font-bold px-2.5 py-1 rounded shadow-xs">
@@ -80,7 +84,6 @@ export const ProductDetailModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Merchant Details Box */}
             <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 text-xs space-y-2">
               <div className="flex items-center gap-2 font-bold text-[#17212F]">
                 <Store className="w-4 h-4 text-[#B8556D]" />
@@ -97,7 +100,6 @@ export const ProductDetailModal: React.FC = () => {
             </div>
           </div>
 
-          {/* Details & Action form */}
           <div className="md:col-span-7 flex flex-col justify-between space-y-4">
             <div className="space-y-4">
               <div>
@@ -109,7 +111,6 @@ export const ProductDetailModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* Price Banner */}
               <div className="p-4 bg-[#FAF0F2] rounded-xl border border-[#F0D9DF] flex items-center justify-between">
                 <div>
                   <div className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">
@@ -133,7 +134,6 @@ export const ProductDetailModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Expiry Transparency Callout */}
               <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/80 text-xs space-y-1.5">
                 <div className="flex items-center gap-2 font-bold text-amber-900">
                   <Clock className="w-4 h-4 text-amber-700 shrink-0" />
@@ -144,7 +144,6 @@ export const ProductDetailModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* Product Description */}
               <div>
                 <h4 className="text-xs font-bold text-[#17212F] uppercase tracking-wider mb-1">
                   Description
@@ -154,7 +153,6 @@ export const ProductDetailModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* Stock Status & Quantity Selector */}
               <div className="pt-2 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-stone-500 block">Availability</span>
@@ -172,6 +170,7 @@ export const ProductDetailModal: React.FC = () => {
                         onClick={() => setQty((prev) => Math.max(1, prev - 1))}
                         disabled={qty <= 1}
                         className="px-2.5 py-1 text-stone-600 hover:bg-stone-100 disabled:opacity-40"
+                        aria-label="Decrease quantity"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
@@ -183,6 +182,7 @@ export const ProductDetailModal: React.FC = () => {
                         onClick={() => setQty((prev) => Math.min(selectedProduct.quantity, prev + 1))}
                         disabled={qty >= selectedProduct.quantity}
                         className="px-2.5 py-1 text-stone-600 hover:bg-stone-100 disabled:opacity-40"
+                        aria-label="Increase quantity"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
@@ -192,7 +192,6 @@ export const ProductDetailModal: React.FC = () => {
               </div>
             </div>
 
-            {/* CTAs */}
             <div className="pt-4 border-t border-stone-200 grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -217,7 +216,6 @@ export const ProductDetailModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Modal Footer Trust Note */}
         <div className="px-6 py-3 bg-stone-50 border-t border-stone-200 flex items-center justify-between text-[11px] text-stone-500">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-700" />

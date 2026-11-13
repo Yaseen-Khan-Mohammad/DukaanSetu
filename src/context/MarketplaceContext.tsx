@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, User, CartItem, Order, ProductCategory } from '../types';
+import { Product, User, CartItem, Order, OrderStatus } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_USERS, INITIAL_ORDERS } from '../data/initialData';
 import { getDaysRemaining } from '../utils/dateUtils';
 
-interface FilterState {
+export interface FilterState {
   searchQuery: string;
   category: string;
   minDiscount: number;
   maxDistance: number;
+  priceRange: 'all' | 'under_50' | '50_150' | 'over_150';
+  availability: 'all' | 'in_stock' | 'low_stock';
   expiryFilter: string; // 'all' | 'urgent' | '3days' | '7days'
   sortBy: 'highest_discount' | 'lowest_price' | 'nearest' | 'recently_added';
 }
@@ -37,6 +39,7 @@ interface MarketplaceContextType {
   cartCount: number;
   orders: Order[];
   createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'status'>) => Order;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   addProduct: (productData: Omit<Product, 'id' | 'addedAt' | 'status' | 'discountPercent'>) => void;
   updateProduct: (productId: string, updates: Partial<Product>) => void;
   deleteProduct: (productId: string) => void;
@@ -47,6 +50,7 @@ interface MarketplaceContextType {
   showToast: (message: string, type?: 'success' | 'info' | 'warning') => void;
   signOut: () => void;
   quickSwitchUser: (userId: string) => void;
+  resetPrototype: () => void;
   lastPlacedOrder: Order | null;
   setLastPlacedOrder: (order: Order | null) => void;
 }
@@ -56,6 +60,8 @@ const defaultFilters: FilterState = {
   category: 'All',
   minDiscount: 0,
   maxDistance: 10,
+  priceRange: 'all',
+  availability: 'all',
   expiryFilter: 'all',
   sortBy: 'highest_discount',
 };
@@ -63,7 +69,6 @@ const defaultFilters: FilterState = {
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
 
 export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Authentication: start with demo user or null (the user asked for sign-in page to be first displayed)
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('dukaansetu_user');
     if (saved) {
@@ -80,7 +85,6 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
 
-  // Products
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('dukaansetu_products');
     if (saved) {
@@ -93,7 +97,6 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return INITIAL_PRODUCTS;
   });
 
-  // Cart
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('dukaansetu_cart');
     if (saved) {
@@ -106,7 +109,6 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return [];
   });
 
-  // Orders
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem('dukaansetu_orders');
     if (saved) {
@@ -119,10 +121,7 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return INITIAL_ORDERS;
   });
 
-  // Filters
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
-
-  // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
@@ -133,7 +132,6 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }, 3200);
   };
 
-  // Sync with localStorage
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('dukaansetu_user', JSON.stringify(currentUser));
@@ -155,10 +153,21 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [orders]);
 
   const addToCart = (product: Product, quantity = 1) => {
+    if (product.quantity <= 0) {
+      showToast(`"${product.name}" is currently sold out`, 'warning');
+      return;
+    }
+
+    const existing = cart.find((item) => item.product.id === product.id);
+    if (existing && existing.quantity >= product.quantity) {
+      showToast(`Maximum available stock (${product.quantity}) already in basket`, 'warning');
+      return;
+    }
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        const newQty = Math.min(existing.quantity + quantity, product.quantity);
+      const found = prev.find((item) => item.product.id === product.id);
+      if (found) {
+        const newQty = Math.min(found.quantity + quantity, product.quantity);
         return prev.map((item) =>
           item.product.id === product.id ? { ...item, quantity: newQty } : item
         );
@@ -212,7 +221,6 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     setOrders((prev) => [newOrder, ...prev]);
 
-    // Update quantities of products
     setProducts((prev) =>
       prev.map((prod) => {
         const itemOrdered = orderData.items.find((i) => i.product.id === prod.id);
@@ -232,6 +240,11 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setLastPlacedOrder(newOrder);
     showToast(`Order #${newOrder.orderNumber} placed successfully!`);
     return newOrder;
+  };
+
+  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    showToast(`Order marked as ${status}`, 'info');
   };
 
   const addProduct = (productData: Omit<Product, 'id' | 'addedAt' | 'status' | 'discountPercent'>) => {
@@ -294,62 +307,91 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  // Filter and sort products
-  const filteredProducts = products.filter((prod) => {
-    // 1. Search query (name, category, shop name)
-    if (filters.searchQuery.trim()) {
-      const q = filters.searchQuery.toLowerCase();
-      const match =
-        prod.name.toLowerCase().includes(q) ||
-        prod.category.toLowerCase().includes(q) ||
-        prod.shopName.toLowerCase().includes(q) ||
-        prod.description.toLowerCase().includes(q);
-      if (!match) return false;
-    }
+  const resetPrototype = () => {
+    localStorage.removeItem('dukaansetu_user');
+    localStorage.removeItem('dukaansetu_products');
+    localStorage.removeItem('dukaansetu_cart');
+    localStorage.removeItem('dukaansetu_orders');
+    setProducts(INITIAL_PRODUCTS);
+    setOrders(INITIAL_ORDERS);
+    setCart([]);
+    setFilters(defaultFilters);
+    setSelectedProduct(null);
+    setLastPlacedOrder(null);
+    setCurrentUser(null);
+    setActiveView('marketplace');
+    showToast('Prototype reset to initial defaults', 'info');
+  };
 
-    // 2. Category
-    if (filters.category !== 'All' && prod.category !== filters.category) {
-      return false;
-    }
+  const filteredProducts = products
+    .filter((prod) => {
+      if (filters.searchQuery.trim()) {
+        const q = filters.searchQuery.toLowerCase();
+        const match =
+          prod.name.toLowerCase().includes(q) ||
+          prod.category.toLowerCase().includes(q) ||
+          prod.shopName.toLowerCase().includes(q) ||
+          prod.description.toLowerCase().includes(q);
+        if (!match) return false;
+      }
 
-    // 3. Discount %
-    if (filters.minDiscount > 0 && prod.discountPercent < filters.minDiscount) {
-      return false;
-    }
+      if (filters.category !== 'All' && prod.category !== filters.category) {
+        return false;
+      }
 
-    // 4. Distance
-    if (prod.distanceKm > filters.maxDistance) {
-      return false;
-    }
+      if (filters.minDiscount > 0 && prod.discountPercent < filters.minDiscount) {
+        return false;
+      }
 
-    // 5. Expiry filter
-    const daysLeft = getDaysRemaining(prod.expiryDate);
-    if (filters.expiryFilter === 'urgent' && (daysLeft > 1 || daysLeft < 0)) {
-      return false;
-    }
-    if (filters.expiryFilter === '3days' && (daysLeft > 3 || daysLeft < 0)) {
-      return false;
-    }
-    if (filters.expiryFilter === '7days' && (daysLeft > 7 || daysLeft < 0)) {
-      return false;
-    }
+      if (prod.distanceKm > filters.maxDistance) {
+        return false;
+      }
 
-    return true;
-  }).sort((a, b) => {
-    if (filters.sortBy === 'highest_discount') {
-      return b.discountPercent - a.discountPercent;
-    }
-    if (filters.sortBy === 'lowest_price') {
-      return a.discountedPrice - b.discountedPrice;
-    }
-    if (filters.sortBy === 'nearest') {
-      return a.distanceKm - b.distanceKm;
-    }
-    if (filters.sortBy === 'recently_added') {
-      return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
-    }
-    return 0;
-  });
+      if (filters.priceRange === 'under_50' && prod.discountedPrice >= 50) {
+        return false;
+      }
+      if (filters.priceRange === '50_150' && (prod.discountedPrice < 50 || prod.discountedPrice > 150)) {
+        return false;
+      }
+      if (filters.priceRange === 'over_150' && prod.discountedPrice <= 150) {
+        return false;
+      }
+
+      if (filters.availability === 'in_stock' && prod.quantity <= 0) {
+        return false;
+      }
+      if (filters.availability === 'low_stock' && (prod.quantity <= 0 || prod.quantity > 5)) {
+        return false;
+      }
+
+      const daysLeft = getDaysRemaining(prod.expiryDate);
+      if (filters.expiryFilter === 'urgent' && (daysLeft > 1 || daysLeft < 0)) {
+        return false;
+      }
+      if (filters.expiryFilter === '3days' && (daysLeft > 3 || daysLeft < 0)) {
+        return false;
+      }
+      if (filters.expiryFilter === '7days' && (daysLeft > 7 || daysLeft < 0)) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (filters.sortBy === 'highest_discount') {
+        return b.discountPercent - a.discountPercent;
+      }
+      if (filters.sortBy === 'lowest_price') {
+        return a.discountedPrice - b.discountedPrice;
+      }
+      if (filters.sortBy === 'nearest') {
+        return a.distanceKm - b.distanceKm;
+      }
+      if (filters.sortBy === 'recently_added') {
+        return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+      }
+      return 0;
+    });
 
   return (
     <MarketplaceContext.Provider
@@ -372,6 +414,7 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
         cartCount,
         orders,
         createOrder,
+        updateOrderStatus,
         addProduct,
         updateProduct,
         deleteProduct,
@@ -382,6 +425,7 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
         showToast,
         signOut,
         quickSwitchUser,
+        resetPrototype,
         lastPlacedOrder,
         setLastPlacedOrder,
       }}

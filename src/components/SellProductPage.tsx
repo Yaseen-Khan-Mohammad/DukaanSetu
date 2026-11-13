@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
-import { ProductCategory, Product } from '../types';
-import { 
-  Store, 
-  Upload, 
-  Calendar, 
-  IndianRupee, 
-  AlertTriangle, 
-  CheckCircle2, 
-  ArrowLeft, 
+import { ProductCategory } from '../types';
+import {
+  Store,
+  Upload,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowLeft,
   ShieldCheck,
-  Sparkles,
-  Info
 } from 'lucide-react';
 
 const CATEGORIES: ProductCategory[] = [
@@ -25,21 +21,21 @@ const CATEGORIES: ProductCategory[] = [
 ];
 
 const PRESET_IMAGES = [
-  { label: 'Fresh Milk & Dairy', url: '/src/assets/images/product_fresh_milk_dairy_1794418650564.jpg' },
-  { label: 'Artisan Bakery Bread', url: '/src/assets/images/product_bakery_artisan_bread_1794418651293.jpg' },
-  { label: 'Farm Fresh Fruits & Produce', url: '/src/assets/images/product_fresh_fruits_basket_1794418651708.jpg' },
-  { label: 'Packaged Grocery & Grains', url: '/src/assets/images/product_packaged_grocery_1794418652852.jpg' },
-  { label: 'Store General Merchandise', url: '/src/assets/images/hero_grocery_market_1794418650248.jpg' },
+  { label: 'Fresh Milk & Dairy', url: '/src/assets/images/product_fresh_milk_dairy_1794550479400.jpg' },
+  { label: 'Artisan Bakery Bread', url: '/src/assets/images/product_bakery_artisan_bread_1794550480367.jpg' },
+  { label: 'Farm Fresh Fruits & Produce', url: '/src/assets/images/product_fresh_fruits_basket_1794550480653.jpg' },
+  { label: 'Packaged Grocery & Grains', url: '/src/assets/images/product_packaged_grocery_1794550482310.jpg' },
+  { label: 'Store General Merchandise', url: '/src/assets/images/hero_grocery_market_1794550479421.jpg' },
 ];
 
 export const SellProductPage: React.FC = () => {
-  const { currentUser, addProduct, setActiveView, showToast } = useMarketplace();
+  const { currentUser, addProduct, setActiveView } = useMarketplace();
 
-  // Form State
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ProductCategory>('Dairy Products');
   const [description, setDescription] = useState('');
   const [selectedImage, setSelectedImage] = useState(PRESET_IMAGES[0].url);
+  const [uploadedDataUrl, setUploadedDataUrl] = useState<string | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [useCustomImage, setUseCustomImage] = useState(false);
 
@@ -49,7 +45,7 @@ export const SellProductPage: React.FC = () => {
   const [mfgDate, setMfgDate] = useState<string>('');
   const [expiryDate, setExpiryDate] = useState<string>('');
 
-  const [shopName, setShopName] = useState(currentUser?.shopName || 'Shree Ganesh Daily Mart');
+  const [shopName, setShopName] = useState(currentUser?.shopName || 'Krishna Daily Needs & Dairy');
   const [shopAddress, setShopAddress] = useState(currentUser?.shopAddress || '12th Main Road, Indiranagar, Bengaluru');
   const [shopPhone, setShopPhone] = useState(currentUser?.phone || '+91 98450 67890');
 
@@ -57,21 +53,31 @@ export const SellProductPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState(false);
 
-  // Auto-calculate discount percentage
   const orig = parseFloat(originalPrice) || 0;
   const disc = parseFloat(discountedPrice) || 0;
   const calculatedDiscount = orig > 0 && disc > 0 && orig > disc ? Math.round(((orig - disc) / orig) * 100) : 0;
 
-  // Minimum expiry date is tomorrow
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minExpiryDate = tomorrow.toISOString().split('T')[0];
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setUploadedDataUrl(reader.result);
+        setUseCustomImage(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    // 1. Validate required fields
     if (!name.trim()) {
       setFormError('Please provide the product name.');
       return;
@@ -102,7 +108,6 @@ export const SellProductPage: React.FC = () => {
       return;
     }
 
-    // 2. Validate expiry date (cannot be expired)
     const selectedExpiry = new Date(expiryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -121,10 +126,12 @@ export const SellProductPage: React.FC = () => {
       return;
     }
 
-    // Choose final image URL
-    const imageUrl = useCustomImage && customImageUrl.trim() ? customImageUrl.trim() : selectedImage;
+    const imageUrl = uploadedDataUrl
+      ? uploadedDataUrl
+      : useCustomImage && customImageUrl.trim()
+      ? customImageUrl.trim()
+      : selectedImage;
 
-    // Add product to store
     addProduct({
       name: name.trim(),
       category,
@@ -153,6 +160,9 @@ export const SellProductPage: React.FC = () => {
     setQuantity('10');
     setMfgDate('');
     setExpiryDate('');
+    setUploadedDataUrl(null);
+    setCustomImageUrl('');
+    setUseCustomImage(false);
     setSafetyCertified(false);
     setPublishSuccess(false);
   };
@@ -160,7 +170,6 @@ export const SellProductPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAFAFB] py-8 sm:py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Navigation Breadcrumb */}
         <button
           type="button"
           onClick={() => setActiveView('marketplace')}
@@ -170,7 +179,6 @@ export const SellProductPage: React.FC = () => {
           <span>Back to Marketplace</span>
         </button>
 
-        {/* Page Header */}
         <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-xs mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
@@ -195,7 +203,6 @@ export const SellProductPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Success Modal / Banner */}
         {publishSuccess ? (
           <div className="bg-white rounded-2xl border border-stone-200 p-8 shadow-sm text-center space-y-5 animate-in fade-in">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
@@ -229,9 +236,7 @@ export const SellProductPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          /* Product Listing Form */
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Error Callout */}
             {formError && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-xs sm:text-sm text-red-700">
                 <AlertTriangle className="w-5 h-5 shrink-0 text-red-600" />
@@ -239,7 +244,6 @@ export const SellProductPage: React.FC = () => {
               </div>
             )}
 
-            {/* 1. Basic Product Info */}
             <div className="bg-white rounded-xl border border-stone-200 p-6 space-y-5">
               <h3 className="text-base font-bold text-[#17212F] pb-2 border-b border-stone-100">
                 1. Product Information
@@ -292,27 +296,58 @@ export const SellProductPage: React.FC = () => {
                 />
               </div>
 
-              {/* Product Photo Selection */}
               <div>
                 <label className="block text-xs font-semibold text-[#17212F] uppercase tracking-wider mb-2">
                   Product Image *
                 </label>
                 <p className="text-xs text-stone-500 mb-3">
-                  Select a commercial product photograph matching your inventory, or enter an external image URL.
+                  Upload a product photo from your device, pick a category photograph, or paste an image URL.
                 </p>
+
+                <div className="mb-3 flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-stone-300 bg-stone-50 hover:bg-stone-100 text-xs font-semibold text-[#17212F] cursor-pointer transition">
+                    <Upload className="w-4 h-4 text-[#B8556D]" />
+                    <span>Upload Photo from Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {uploadedDataUrl && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={uploadedDataUrl}
+                        alt="Uploaded preview"
+                        className="w-10 h-10 rounded object-cover border border-[#B8556D]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setUploadedDataUrl(null)}
+                        className="text-xs text-red-600 hover:underline font-medium"
+                      >
+                        Remove upload
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-3">
                   {PRESET_IMAGES.map((img) => (
-                    <div
+                    <button
+                      type="button"
                       key={img.url}
                       onClick={() => {
                         setSelectedImage(img.url);
+                        setUploadedDataUrl(null);
                         setUseCustomImage(false);
                       }}
-                      className={`relative aspect-[4/3] rounded-lg overflow-hidden border-2 cursor-pointer transition ${
-                        !useCustomImage && selectedImage === img.url
+                      className={`relative aspect-[4/3] rounded-lg overflow-hidden border-2 cursor-pointer transition text-left ${
+                        !uploadedDataUrl && !useCustomImage && selectedImage === img.url
                           ? 'border-[#B8556D] ring-2 ring-[#B8556D]/30'
-                          : 'border-stone-200 opacity-70 hover:opacity-100'
+                          : 'border-stone-200 opacity-75 hover:opacity-100'
                       }`}
                     >
                       <img
@@ -324,7 +359,7 @@ export const SellProductPage: React.FC = () => {
                       <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1 text-[10px] text-white text-center font-medium truncate">
                         {img.label}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
@@ -333,11 +368,14 @@ export const SellProductPage: React.FC = () => {
                     type="checkbox"
                     id="useCustomImg"
                     checked={useCustomImage}
-                    onChange={(e) => setUseCustomImage(e.target.checked)}
+                    onChange={(e) => {
+                      setUseCustomImage(e.target.checked);
+                      if (e.target.checked) setUploadedDataUrl(null);
+                    }}
                     className="accent-[#B8556D]"
                   />
                   <label htmlFor="useCustomImg" className="text-xs text-stone-700 font-medium cursor-pointer">
-                    Use custom image URL or photo upload link
+                    Or enter an image URL
                   </label>
                 </div>
 
@@ -355,7 +393,6 @@ export const SellProductPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Pricing and Dates */}
             <div className="bg-white rounded-xl border border-stone-200 p-6 space-y-5">
               <h3 className="text-base font-bold text-[#17212F] pb-2 border-b border-stone-100">
                 2. Pricing & Expiry Transparency
@@ -416,7 +453,6 @@ export const SellProductPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Discount Preview Badge */}
               {calculatedDiscount > 0 ? (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs">
                   <span className="font-semibold text-emerald-800">
@@ -432,7 +468,6 @@ export const SellProductPage: React.FC = () => {
                 </div>
               ) : null}
 
-              {/* Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
                   <label className="block text-xs font-semibold text-[#17212F] uppercase tracking-wider mb-1.5">
@@ -465,7 +500,6 @@ export const SellProductPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Shop & Store Details */}
             <div className="bg-white rounded-xl border border-stone-200 p-6 space-y-4">
               <h3 className="text-base font-bold text-[#17212F] pb-2 border-b border-stone-100">
                 3. Store & Pickup Details
@@ -513,7 +547,6 @@ export const SellProductPage: React.FC = () => {
                 />
               </div>
 
-              {/* Quality & Safety Checkbox */}
               <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
                 <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
@@ -530,7 +563,6 @@ export const SellProductPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Submission Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
               <div className="text-xs text-stone-500 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-700" />
