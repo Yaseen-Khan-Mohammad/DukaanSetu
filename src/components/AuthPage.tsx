@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
-import { User, UserRole } from '../types';
+import { UserRole } from '../types';
 import {
   Eye,
   EyeOff,
@@ -86,7 +86,7 @@ const ROLE_THEMES: Record<UserRole, RoleTheme> = {
 };
 
 export const AuthPage: React.FC = () => {
-  const { setCurrentUser, setActiveView, showToast, quickSwitchUser, resetPrototype } = useMarketplace();
+  const { authenticateUser, registerUser, showToast, quickSwitchUser, resetPrototype } = useMarketplace();
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -128,19 +128,10 @@ export const AuthPage: React.FC = () => {
       return;
     }
 
-    const displayName = trimmedEmail.split('@')[0] || 'DukaanSetu User';
-    const newUser: User = {
-      id: `user_${Date.now()}`,
-      name: displayName.charAt(0).toUpperCase() + displayName.slice(1),
-      email: trimmedEmail,
-      phone: '+91 98450 00000',
-      role,
-      shopName: role === 'shop_owner' ? 'My Local Store' : role === 'business_buyer' ? 'My Business Kitchen' : undefined,
-    };
-
-    setCurrentUser(newUser);
-    setActiveView(role === 'shop_owner' ? 'sell' : 'marketplace');
-    showToast(`Welcome to DukaanSetu, ${newUser.name}!`);
+    const res = authenticateUser(trimmedEmail, loginPassword, role);
+    if (!res.ok) {
+      setFormError(res.error);
+    }
   };
 
   const handleSignUp = (e: React.FormEvent) => {
@@ -167,19 +158,19 @@ export const AuthPage: React.FC = () => {
       return;
     }
 
-    const newUser: User = {
-      id: `user_${Date.now()}`,
+    const res = registerUser({
       name: name.trim(),
       email: signupEmail.trim(),
       phone: phone.trim(),
+      password: signupPassword,
       role,
-      shopName: role === 'shop_owner' || role === 'business_buyer' ? shopName.trim() || undefined : undefined,
-      shopAddress: role === 'shop_owner' || role === 'business_buyer' ? shopAddress.trim() || undefined : undefined,
-    };
+      shopName: shopName.trim() || undefined,
+      shopAddress: shopAddress.trim() || undefined,
+    });
 
-    setCurrentUser(newUser);
-    setActiveView(role === 'shop_owner' ? 'sell' : 'marketplace');
-    showToast(`Account registered successfully! Welcome, ${newUser.name}`);
+    if (!res.ok) {
+      setFormError(res.error);
+    }
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {

@@ -4,9 +4,17 @@ import { formatCurrency } from '../utils/dateUtils';
 import { CheckCircle, Store, Phone, PackageCheck } from 'lucide-react';
 
 export const OrderSuccessModal: React.FC = () => {
-  const { lastPlacedOrder, setLastPlacedOrder, setActiveView } = useMarketplace();
+  const { lastPlacedOrder, lastPlacedOrders, setLastPlacedOrder, setActiveView } = useMarketplace();
 
   if (!lastPlacedOrder) return null;
+
+  const isMultiShop = lastPlacedOrders.length > 1;
+  const combinedTotal = isMultiShop
+    ? lastPlacedOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+    : lastPlacedOrder.totalAmount;
+  const combinedSavings = isMultiShop
+    ? lastPlacedOrders.reduce((sum, o) => sum + o.savings, 0)
+    : lastPlacedOrder.savings;
 
   return (
     <div
@@ -21,12 +29,19 @@ export const OrderSuccessModal: React.FC = () => {
           <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
             <CheckCircle className="w-8 h-8" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-[#17212F]">Order Confirmed!</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#17212F]">
+            {isMultiShop ? `${lastPlacedOrders.length} Store Orders Placed!` : 'Order Placed!'}
+          </h2>
           <p className="text-xs text-stone-600">
-            Thank you, <strong>{lastPlacedOrder.customerName}</strong>. Your order is registered with the merchant.
+            Thank you, <strong>{lastPlacedOrder.customerName}</strong>.{' '}
+            {isMultiShop
+              ? 'Your items were routed to each respective shop owner for fulfillment.'
+              : 'Your order has been sent to the shop owner for confirmation.'}
           </p>
           <div className="inline-block px-3 py-1 bg-stone-100 rounded text-xs font-mono font-bold text-[#17212F]">
-            Order #{lastPlacedOrder.orderNumber}
+            {isMultiShop
+              ? lastPlacedOrders.map((o) => `#${o.orderNumber}`).join(' · ')
+              : `Order #${lastPlacedOrder.orderNumber}`}
           </div>
         </div>
 
@@ -34,30 +49,36 @@ export const OrderSuccessModal: React.FC = () => {
           <div className="p-3 bg-[#FAF0F2] rounded-xl border border-[#F0D9DF] space-y-1">
             <div className="font-bold text-[#17212F] flex items-center gap-1.5">
               <Store className="w-4 h-4 text-[#B8556D]" />
-              <span>{lastPlacedOrder.shopName}</span>
+              <span>
+                {isMultiShop
+                  ? `${lastPlacedOrders.map((o) => o.shopName).join(', ')}`
+                  : lastPlacedOrder.shopName}
+              </span>
             </div>
-            <div className="text-stone-600 flex items-center gap-1.5 pl-5">
-              <Phone className="w-3.5 h-3.5 text-stone-400" />
-              <span>Merchant Phone: {lastPlacedOrder.shopPhone}</span>
-            </div>
+            {!isMultiShop && (
+              <div className="text-stone-600 flex items-center gap-1.5 pl-5">
+                <Phone className="w-3.5 h-3.5 text-stone-400" />
+                <span>Merchant Phone: {lastPlacedOrder.shopPhone}</span>
+              </div>
+            )}
             <p className="text-stone-500 pl-5 text-[11px]">
               {lastPlacedOrder.fulfillmentType === 'pickup'
-                ? 'Ready for counter collection in approx 2 hours. Pay at store counter.'
-                : 'Direct neighborhood delivery dispatched to your address.'}
+                ? 'Sent to merchant as Pending. Ready for pickup once accepted.'
+                : 'Sent to merchant for neighborhood delivery.'}
             </p>
           </div>
 
           <div className="flex justify-between items-center py-2 px-1 text-stone-700">
             <span>Total Amount:</span>
             <span className="font-mono font-bold text-base text-[#17212F]">
-              {formatCurrency(lastPlacedOrder.totalAmount)}
+              {formatCurrency(combinedTotal)}
             </span>
           </div>
 
           <div className="flex justify-between items-center py-1.5 px-3 bg-emerald-50 rounded text-emerald-800 font-semibold text-xs">
             <span>You Saved:</span>
             <span className="font-mono">
-              {formatCurrency(lastPlacedOrder.savings)}
+              {formatCurrency(combinedSavings)}
             </span>
           </div>
         </div>

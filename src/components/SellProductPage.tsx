@@ -29,7 +29,17 @@ const PRESET_IMAGES = [
   { label: 'Store General Merchandise', url: IMAGES.heroGroceryMarket },
 ];
 
-export const SellProductPage: React.FC = () => {
+interface SellProductPageProps {
+  embeddedInDashboard?: boolean;
+  onProductAdded?: () => void;
+  onCancel?: () => void;
+}
+
+export const SellProductPage: React.FC<SellProductPageProps> = ({
+  embeddedInDashboard = false,
+  onProductAdded,
+  onCancel,
+}) => {
   const { currentUser, addProduct, setActiveView } = useMarketplace();
 
   const [name, setName] = useState('');
@@ -169,18 +179,20 @@ export const SellProductPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFB] py-8 sm:py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <button
-          type="button"
-          onClick={() => setActiveView('marketplace')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-[#B8556D] mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Marketplace</span>
-        </button>
+    <div className={embeddedInDashboard ? 'space-y-6' : 'min-h-screen bg-[#FAFAFB] py-8 sm:py-12'}>
+      <div className={embeddedInDashboard ? 'max-w-4xl' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'}>
+        {!embeddedInDashboard && (
+          <button
+            type="button"
+            onClick={() => setActiveView('marketplace')}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-[#B8556D] mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Marketplace</span>
+          </button>
+        )}
 
-        <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-xs mb-8">
+        <div className="bg-white rounded-2xl border border-stone-200 p-6 sm:p-8 shadow-xs mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#B8556D] uppercase tracking-wider">
@@ -220,12 +232,16 @@ export const SellProductPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setActiveView('marketplace');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (embeddedInDashboard && onProductAdded) {
+                    onProductAdded();
+                  } else {
+                    setActiveView('marketplace');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }}
                 className="px-6 py-2.5 bg-[#B8556D] hover:bg-[#A0445A] text-white text-sm font-semibold rounded-lg shadow-xs transition"
               >
-                View in Marketplace
+                {embeddedInDashboard ? 'View My Products' : 'View in Marketplace'}
               </button>
               <button
                 type="button"
@@ -573,7 +589,13 @@ export const SellProductPage: React.FC = () => {
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setActiveView('marketplace')}
+                  onClick={() => {
+                    if (embeddedInDashboard && onCancel) {
+                      onCancel();
+                    } else {
+                      setActiveView('marketplace');
+                    }
+                  }}
                   className="w-1/2 sm:w-auto px-5 py-3 text-xs font-semibold text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition"
                 >
                   Cancel

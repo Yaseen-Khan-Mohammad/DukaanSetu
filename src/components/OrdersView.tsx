@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
+import { OrderStatus } from '../types';
 import { formatCurrency } from '../utils/dateUtils';
 import { resolveImageUrl } from '../assets/imageAssets';
 import {
@@ -12,10 +13,19 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-export const OrdersView: React.FC = () => {
-  const { orders, products, setActiveView, addToCart, updateOrderStatus, showToast } = useMarketplace();
+const STATUS_BADGE_STYLES: Record<OrderStatus, string> = {
+  Pending: 'bg-amber-100 text-amber-800',
+  Accepted: 'bg-sky-100 text-sky-800',
+  Processing: 'bg-indigo-100 text-indigo-800',
+  'Ready for Pickup': 'bg-blue-100 text-blue-800',
+  Completed: 'bg-emerald-100 text-emerald-800',
+  Rejected: 'bg-red-100 text-red-700',
+};
 
-  const handleReorder = (items: typeof orders[number]['items']) => {
+export const OrdersView: React.FC = () => {
+  const { buyerOrders, products, setActiveView, addToCart, updateOrderStatus, showToast } = useMarketplace();
+
+  const handleReorder = (items: typeof buyerOrders[number]['items']) => {
     let addedAny = false;
     items.forEach((item) => {
       const liveProduct = products.find((p) => p.id === item.product.id);
@@ -31,7 +41,7 @@ export const OrdersView: React.FC = () => {
     }
   };
 
-  if (orders.length === 0) {
+  if (buyerOrders.length === 0) {
     return (
       <div className="min-h-[70vh] bg-[#FAFAFB] flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full bg-white rounded-2xl border border-stone-200 p-8 text-center space-y-4 shadow-xs">
@@ -75,12 +85,12 @@ export const OrdersView: React.FC = () => {
           </div>
 
           <span className="text-xs font-semibold text-[#17212F] bg-white px-3 py-1.5 rounded-lg border border-stone-200">
-            {orders.length} {orders.length === 1 ? 'Order' : 'Orders'} Placed
+            {buyerOrders.length} {buyerOrders.length === 1 ? 'Order' : 'Orders'} Placed
           </span>
         </div>
 
         <div className="space-y-6">
-          {orders.map((order) => {
+          {buyerOrders.map((order) => {
             const formattedDate = new Date(order.orderDate).toLocaleDateString('en-IN', {
               day: 'numeric',
               month: 'short',
@@ -104,11 +114,7 @@ export const OrdersView: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <span
                       className={`px-2.5 py-1 rounded text-[11px] font-bold ${
-                        order.status === 'Delivered'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : order.status === 'Ready for Pickup'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-amber-100 text-amber-800'
+                        STATUS_BADGE_STYLES[order.status] || 'bg-stone-100 text-stone-700'
                       }`}
                     >
                       {order.status}
@@ -187,19 +193,21 @@ export const OrdersView: React.FC = () => {
                   </div>
 
                   <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs border-t border-stone-100">
-                    <span className="text-emerald-700 font-semibold">
-                      You saved {formatCurrency(order.savings)} on this purchase through DukaanSetu.
+                    <span className={order.status === 'Rejected' ? 'text-red-600 font-semibold' : 'text-emerald-700 font-semibold'}>
+                      {order.status === 'Rejected'
+                        ? 'This order was declined by the store owner. Any reserved stock has been released.'
+                        : `You saved ${formatCurrency(order.savings)} on this purchase through DukaanSetu.`}
                     </span>
 
                     <div className="flex items-center gap-4">
-                      {order.status !== 'Delivered' && (
+                      {order.status !== 'Completed' && order.status !== 'Rejected' && (
                         <button
                           type="button"
-                          onClick={() => updateOrderStatus(order.id, 'Delivered')}
+                          onClick={() => updateOrderStatus(order.id, 'Completed')}
                           className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Mark Collected / Delivered</span>
+                          <span>Mark Collected / Completed</span>
                         </button>
                       )}
 

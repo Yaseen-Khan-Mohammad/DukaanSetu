@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, User, CartItem, Order, OrderStatus } from '../types';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Product, User, UserRole, CartItem, Order, OrderStatus } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_USERS, INITIAL_ORDERS } from '../data/initialData';
 import { getDaysRemaining } from '../utils/dateUtils';
 
@@ -20,13 +20,32 @@ interface ToastMessage {
   type: 'success' | 'info' | 'warning';
 }
 
+export interface RegisterUserPayload {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: UserRole;
+  shopName?: string;
+  shopAddress?: string;
+}
+
+export type AuthResult =
+  | { ok: true; user: User }
+  | { ok: false; error: string };
+
 interface MarketplaceContextType {
+  users: User[];
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
+  authenticateUser: (email: string, password: string, role: UserRole) => AuthResult;
+  registerUser: (payload: RegisterUserPayload) => AuthResult;
+  updateUserProfile: (updates: Partial<User>) => void;
   activeView: 'marketplace' | 'sell' | 'orders' | 'profile' | 'cart' | 'checkout';
   setActiveView: (view: 'marketplace' | 'sell' | 'orders' | 'profile' | 'cart' | 'checkout') => void;
   products: Product[];
   filteredProducts: Product[];
+  shopOwnerProducts: Product[];
   selectedProduct: Product | null;
   setSelectedProduct: (product: Product | null) => void;
   cart: CartItem[];
@@ -38,9 +57,13 @@ interface MarketplaceContextType {
   cartSavings: number;
   cartCount: number;
   orders: Order[];
-  createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'status'>) => Order;
+  buyerOrders: Order[];
+  shopOwnerOrders: Order[];
+  createOrder: (
+    orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'status' | 'buyerId' | 'buyerRole' | 'sellerId'>
+  ) => Order[];
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
-  addProduct: (productData: Omit<Product, 'id' | 'addedAt' | 'status' | 'discountPercent'>) => void;
+  addProduct: (productData: Omit<Product, 'id' | 'addedAt' | 'status' | 'discountPercent' | 'shopOwnerId'> & { shopOwnerId?: string }) => void;
   updateProduct: (productId: string, updates: Partial<Product>) => void;
   deleteProduct: (productId: string) => void;
   filters: FilterState;
@@ -52,6 +75,7 @@ interface MarketplaceContextType {
   quickSwitchUser: (userId: string) => void;
   resetPrototype: () => void;
   lastPlacedOrder: Order | null;
+  lastPlacedOrders: Order[];
   setLastPlacedOrder: (order: Order | null) => void;
 }
 
@@ -66,9 +90,72 @@ const defaultFilters: FilterState = {
   sortBy: 'highest_discount',
 };
 
+const normalizeOrderStatus = (rawStatus: string): OrderStatus => {
+  if (rawStatus === 'Confirmed') return 'Pending';
+  if (rawStatus === 'Out for Delivery') return 'Processing';
+  if (rawStatus === 'Delivered') return 'Completed';
+  if (
+    rawStatus === 'Pending' ||
+    rawStatus === 'Accepted' ||
+    rawStatus === 'Processing' ||
+    rawStatus === 'Ready for Pickup' ||
+    rawStatus === 'Completed' ||
+    rawStatus === 'Rejected'
+  ) {
+    return rawStatus;
+  }
+  return 'Pending';
+};
+
+const computeProductStatus = (quantity: number): Product['status'] => {
+  if (quantity <= 0) return 'sold_out';
+  if (quantity <= 5) return 'low_stock';
+  return 'available';
+};
+
+const normalizeProducts = (list: Product[]): Product[] =>
+  list.map((p) => ({
+    ...p,
+    shopOwnerId: p.shopOwnerId || 'user_shop_1',
+    status: computeProductStatus(p.quantity),
+  }));
+
+const normalizeOrders = (list: Order[], allUsers: User[]): Order[] =>
+  list.map((o) => {
+    const matchedBuyer = allUsers.find(
+      (u) => u.email.toLowerCase() === (o.customerEmail || '').toLowerCase()
+    );
+    const derivedSellerId = o.sellerId || o.items?.[0]?.product?.shopOwnerId || 'user_shop_1';
+    return {
+      ...o,
+      buyerId: o.buyerId || matchedBuyer?.id || 'user_cust_1',
+      buyerRole: o.buyerRole || matchedBuyer?.role,
+      sellerId: derivedSellerId,
+      status: normalizeOrderStatus(o.status as string),
+    };
+  });
+
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined);
 
 export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('dukaansetu_users');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as User[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Ensure seeded demo accounts exist if missing
+          const existingIds = new Set(parsed.map((u) => u.id));
+          const missingSeeded = INITIAL_USERS.filter((u) => !existingIds.has(u.id));
+          return [...parsed, ...missingSeeded];
+        }
+      } catch {
+        return INITIAL_USERS;
+      }
+    }
+    return INITIAL_USERS;
+  });
+
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('dukaansetu_user');
     if (saved) {
@@ -84,12 +171,13 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [activeView, setActiveView] = useState<'marketplace' | 'sell' | 'orders' | 'profile' | 'cart' | 'checkout'>('marketplace');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [lastPlacedOrder, setLastPlacedOrder] = useState<Order | null>(null);
+  const [lastPlacedOrders, setLastPlacedOrders] = useState<Order[]>([]);
 
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('dukaansetu_products');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return normalizeProducts(JSON.parse(saved));
       } catch {
         return INITIAL_PRODUCTS;
       }
@@ -113,7 +201,7 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const saved = localStorage.getItem('dukaansetu_orders');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return normalizeOrders(JSON.parse(saved), INITIAL_USERS);
       } catch {
         return INITIAL_ORDERS;
       }
@@ -131,6 +219,10 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3200);
   };
+
+  useEffect(() => {
+    localStorage.setItem('dukaansetu_users', JSON.stringify(users));
+  }, [users]);
 
   useEffect(() => {
     if (currentUser) {
@@ -151,6 +243,127 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     localStorage.setItem('dukaansetu_orders', JSON.stringify(orders));
   }, [orders]);
+
+  const authenticateUser = (email: string, password: string, role: UserRole): AuthResult => {
+    const emailLower = email.trim().toLowerCase();
+    if (!emailLower || !password) {
+      return { ok: false, error: 'Please enter both your email address and password.' };
+    }
+
+    const existingSameEmail = users.find((u) => u.email.toLowerCase() === emailLower);
+    if (existingSameEmail) {
+      if (existingSameEmail.role !== role) {
+        const existingRoleLabel =
+          existingSameEmail.role === 'shop_owner'
+            ? 'Shop Owner'
+            : existingSameEmail.role === 'business_buyer'
+            ? 'Business Buyer'
+            : 'Individual Customer';
+        return {
+          ok: false,
+          error: `This email is registered as a ${existingRoleLabel}. Please select ${existingRoleLabel} above to sign in.`,
+        };
+      }
+      if (existingSameEmail.password && existingSameEmail.password !== password) {
+        return { ok: false, error: 'Incorrect password for this account. Please try again.' };
+      }
+
+      setCurrentUser(existingSameEmail);
+      setActiveView(existingSameEmail.role === 'shop_owner' ? 'sell' : 'marketplace');
+      showToast(`Welcome back to DukaanSetu, ${existingSameEmail.name}!`);
+      return { ok: true, user: existingSameEmail };
+    }
+
+    // First-time local demo login: create and persist deterministic record so subsequent logins keep the same user.id
+    const rawPrefix = emailLower.split('@')[0] || 'User';
+    const formattedName = rawPrefix
+      .split(/[._-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+
+    const newUser: User = {
+      id: `user_${role}_${Date.now()}`,
+      name: formattedName || 'DukaanSetu User',
+      email: email.trim(),
+      phone: '+91 98450 00000',
+      password,
+      role,
+      shopName:
+        role === 'shop_owner'
+          ? `${formattedName || 'Local'} Store`
+          : role === 'business_buyer'
+          ? `${formattedName || 'Business'} Kitchen`
+          : undefined,
+      shopAddress: role === 'shop_owner' ? 'Indiranagar, Bengaluru' : undefined,
+    };
+
+    setUsers((prev) => [...prev, newUser]);
+    setCurrentUser(newUser);
+    setActiveView(role === 'shop_owner' ? 'sell' : 'marketplace');
+    showToast(`Welcome to DukaanSetu, ${newUser.name}!`);
+    return { ok: true, user: newUser };
+  };
+
+  const registerUser = (payload: RegisterUserPayload): AuthResult => {
+    const emailLower = payload.email.trim().toLowerCase();
+    const duplicate = users.find((u) => u.email.toLowerCase() === emailLower);
+    if (duplicate) {
+      return {
+        ok: false,
+        error: 'An account with this email address already exists. Please sign in instead.',
+      };
+    }
+
+    const newUser: User = {
+      id: `user_${payload.role}_${Date.now()}`,
+      name: payload.name.trim(),
+      email: payload.email.trim(),
+      phone: payload.phone.trim(),
+      password: payload.password,
+      role: payload.role,
+      shopName:
+        payload.role === 'shop_owner' || payload.role === 'business_buyer'
+          ? payload.shopName?.trim() || undefined
+          : undefined,
+      shopAddress:
+        payload.role === 'shop_owner' || payload.role === 'business_buyer'
+          ? payload.shopAddress?.trim() || undefined
+          : undefined,
+      savedAddress: payload.shopAddress?.trim() || undefined,
+    };
+
+    setUsers((prev) => [...prev, newUser]);
+    setCurrentUser(newUser);
+    setActiveView(payload.role === 'shop_owner' ? 'sell' : 'marketplace');
+    showToast(`Account registered successfully! Welcome, ${newUser.name}`);
+    return { ok: true, user: newUser };
+  };
+
+  const updateUserProfile = (updates: Partial<User>) => {
+    if (!currentUser) return;
+    const updatedUser: User = { ...currentUser, ...updates };
+    setCurrentUser(updatedUser);
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+
+    // Keep seller metadata in sync on that shop owner's own products if store details changed
+    if (updatedUser.role === 'shop_owner' && (updates.shopName || updates.shopAddress || updates.phone)) {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.shopOwnerId === updatedUser.id
+            ? {
+                ...p,
+                shopName: updatedUser.shopName || p.shopName,
+                shopAddress: updatedUser.shopAddress || p.shopAddress,
+                shopPhone: updatedUser.phone || p.shopPhone,
+              }
+            : p
+        )
+      );
+    }
+
+    showToast('Profile information updated successfully');
+  };
 
   const addToCart = (product: Product, quantity = 1) => {
     if (product.quantity <= 0) {
@@ -209,17 +422,57 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const createOrder = (orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'status'>): Order => {
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const newOrder: Order = {
-      ...orderData,
-      id: `ord_${Date.now()}`,
-      orderNumber: `DS-2026-${randomSuffix}`,
-      orderDate: new Date().toISOString(),
-      status: 'Confirmed',
-    };
+  const createOrder = (
+    orderData: Omit<Order, 'id' | 'orderNumber' | 'orderDate' | 'status' | 'buyerId' | 'buyerRole' | 'sellerId'>
+  ): Order[] => {
+    // Group cart items by seller (shopOwnerId) so every shop owner receives strictly their own orders & items
+    const itemsBySeller = new Map<string, CartItem[]>();
+    orderData.items.forEach((item) => {
+      const sellerId = item.product.shopOwnerId || 'user_shop_1';
+      const existing = itemsBySeller.get(sellerId) || [];
+      existing.push(item);
+      itemsBySeller.set(sellerId, existing);
+    });
 
-    setOrders((prev) => [newOrder, ...prev]);
+    const nowIso = new Date().toISOString();
+    const baseTimestamp = Date.now();
+    const createdOrders: Order[] = [];
+
+    let groupIndex = 0;
+    itemsBySeller.forEach((sellerItems, sellerId) => {
+      const groupSubtotal = sellerItems.reduce(
+        (sum, item) => sum + item.product.discountedPrice * item.quantity,
+        0
+      );
+      const groupSavings = sellerItems.reduce(
+        (sum, item) => sum + (item.product.originalPrice - item.product.discountedPrice) * item.quantity,
+        0
+      );
+      const groupDeliveryFee = groupIndex === 0 ? orderData.deliveryFee : 0;
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+
+      const newOrder: Order = {
+        ...orderData,
+        id: `ord_${baseTimestamp}_${groupIndex}`,
+        orderNumber: `DS-2026-${randomSuffix}`,
+        buyerId: currentUser?.id || 'guest',
+        buyerRole: currentUser?.role,
+        sellerId,
+        items: sellerItems,
+        subtotal: groupSubtotal,
+        savings: groupSavings,
+        deliveryFee: groupDeliveryFee,
+        totalAmount: groupSubtotal + groupDeliveryFee,
+        orderDate: nowIso,
+        status: 'Pending',
+        shopName: sellerItems[0]?.product.shopName || orderData.shopName,
+        shopPhone: sellerItems[0]?.product.shopPhone || orderData.shopPhone,
+      };
+      createdOrders.push(newOrder);
+      groupIndex += 1;
+    });
+
+    setOrders((prev) => [...createdOrders, ...prev]);
 
     setProducts((prev) =>
       prev.map((prod) => {
@@ -229,7 +482,7 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return {
             ...prod,
             quantity: remaining,
-            status: remaining === 0 ? 'sold_out' : remaining <= 3 ? 'low_stock' : 'available',
+            status: computeProductStatus(remaining),
           };
         }
         return prod;
@@ -237,27 +490,67 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
     );
 
     clearCart();
-    setLastPlacedOrder(newOrder);
-    showToast(`Order #${newOrder.orderNumber} placed successfully!`);
-    return newOrder;
+    setLastPlacedOrders(createdOrders);
+    setLastPlacedOrder(createdOrders[0] || null);
+    showToast(
+      createdOrders.length > 1
+        ? `${createdOrders.length} store orders placed successfully!`
+        : `Order #${createdOrders[0]?.orderNumber} placed successfully!`
+    );
+    return createdOrders;
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return;
+
+    if (currentUser?.role === 'shop_owner' && targetOrder.sellerId !== currentUser.id) {
+      showToast('You can only update orders belonging to your own shop.', 'warning');
+      return;
+    }
+
+    const wasRejected = targetOrder.status === 'Rejected';
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
-    showToast(`Order marked as ${status}`, 'info');
+
+    // Restore inventory if a shop owner rejects a pending/active order
+    if (!wasRejected && status === 'Rejected') {
+      setProducts((prev) =>
+        prev.map((prod) => {
+          const orderedItem = targetOrder.items.find((i) => i.product.id === prod.id);
+          if (orderedItem) {
+            const restoredQty = prod.quantity + orderedItem.quantity;
+            return {
+              ...prod,
+              quantity: restoredQty,
+              status: computeProductStatus(restoredQty),
+            };
+          }
+          return prod;
+        })
+      );
+    }
+
+    showToast(`Order #${targetOrder.orderNumber} updated to ${status}`, 'info');
   };
 
-  const addProduct = (productData: Omit<Product, 'id' | 'addedAt' | 'status' | 'discountPercent'>) => {
+  const addProduct = (
+    productData: Omit<Product, 'id' | 'addedAt' | 'status' | 'discountPercent' | 'shopOwnerId'> & {
+      shopOwnerId?: string;
+    }
+  ) => {
     const discountPercent = Math.round(
       ((productData.originalPrice - productData.discountedPrice) / productData.originalPrice) * 100
     );
 
+    const ownerId = productData.shopOwnerId || currentUser?.id || 'user_shop_1';
+
     const newProduct: Product = {
       ...productData,
+      shopOwnerId: ownerId,
       id: `prod_${Date.now()}`,
       discountPercent: Math.max(0, discountPercent),
       addedAt: new Date().toISOString(),
-      status: productData.quantity <= 3 ? 'low_stock' : 'available',
+      status: computeProductStatus(productData.quantity),
     };
 
     setProducts((prev) => [newProduct, ...prev]);
@@ -265,27 +558,44 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const updateProduct = (productId: string, updates: Partial<Product>) => {
+    const target = products.find((p) => p.id === productId);
+    if (!target) return;
+
+    if (currentUser?.role === 'shop_owner' && target.shopOwnerId !== currentUser.id) {
+      showToast('Unauthorized: You can only edit products from your own shop.', 'warning');
+      return;
+    }
+
     setProducts((prev) =>
       prev.map((prod) => {
         if (prod.id === productId) {
           const updated = { ...prod, ...updates };
           if (updated.originalPrice && updated.discountedPrice) {
-            updated.discountPercent = Math.round(
-              ((updated.originalPrice - updated.discountedPrice) / updated.originalPrice) * 100
+            updated.discountPercent = Math.max(
+              0,
+              Math.round(((updated.originalPrice - updated.discountedPrice) / updated.originalPrice) * 100)
             );
           }
           if (updated.quantity !== undefined) {
-            updated.status = updated.quantity === 0 ? 'sold_out' : updated.quantity <= 3 ? 'low_stock' : 'available';
+            updated.status = computeProductStatus(updated.quantity);
           }
           return updated;
         }
         return prod;
       })
     );
-    showToast('Listing updated successfully');
+    showToast('Product listing updated successfully');
   };
 
   const deleteProduct = (productId: string) => {
+    const target = products.find((p) => p.id === productId);
+    if (!target) return;
+
+    if (currentUser?.role === 'shop_owner' && target.shopOwnerId !== currentUser.id) {
+      showToast('Unauthorized: You can only delete products from your own shop.', 'warning');
+      return;
+    }
+
     setProducts((prev) => prev.filter((p) => p.id !== productId));
     showToast('Listing removed from marketplace', 'info');
   };
@@ -296,32 +606,56 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const signOut = () => {
     setCurrentUser(null);
+    setActiveView('marketplace');
     showToast('Signed out of DukaanSetu', 'info');
   };
 
   const quickSwitchUser = (userId: string) => {
-    const target = INITIAL_USERS.find((u) => u.id === userId);
+    const target = users.find((u) => u.id === userId) || INITIAL_USERS.find((u) => u.id === userId);
     if (target) {
       setCurrentUser(target);
+      setActiveView(target.role === 'shop_owner' ? 'sell' : 'marketplace');
       showToast(`Logged in as ${target.name} (${target.role.replace('_', ' ')})`);
     }
   };
 
   const resetPrototype = () => {
+    localStorage.removeItem('dukaansetu_users');
     localStorage.removeItem('dukaansetu_user');
     localStorage.removeItem('dukaansetu_products');
     localStorage.removeItem('dukaansetu_cart');
     localStorage.removeItem('dukaansetu_orders');
+    setUsers(INITIAL_USERS);
     setProducts(INITIAL_PRODUCTS);
     setOrders(INITIAL_ORDERS);
     setCart([]);
     setFilters(defaultFilters);
     setSelectedProduct(null);
     setLastPlacedOrder(null);
+    setLastPlacedOrders([]);
     setCurrentUser(null);
     setActiveView('marketplace');
     showToast('Prototype reset to initial defaults', 'info');
   };
+
+  const shopOwnerProducts = useMemo(() => {
+    if (!currentUser || currentUser.role !== 'shop_owner') return [];
+    return products.filter((p) => p.shopOwnerId === currentUser.id);
+  }, [products, currentUser]);
+
+  const shopOwnerOrders = useMemo(() => {
+    if (!currentUser || currentUser.role !== 'shop_owner') return [];
+    return orders.filter((o) => o.sellerId === currentUser.id);
+  }, [orders, currentUser]);
+
+  const buyerOrders = useMemo(() => {
+    if (!currentUser) return [];
+    return orders.filter(
+      (o) =>
+        o.buyerId === currentUser.id ||
+        (!o.buyerId && o.customerEmail.toLowerCase() === currentUser.email.toLowerCase())
+    );
+  }, [orders, currentUser]);
 
   const filteredProducts = products
     .filter((prod) => {
@@ -396,12 +730,17 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   return (
     <MarketplaceContext.Provider
       value={{
+        users,
         currentUser,
         setCurrentUser,
+        authenticateUser,
+        registerUser,
+        updateUserProfile,
         activeView,
         setActiveView,
         products,
         filteredProducts,
+        shopOwnerProducts,
         selectedProduct,
         setSelectedProduct,
         cart,
@@ -413,6 +752,8 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
         cartSavings,
         cartCount,
         orders,
+        buyerOrders,
+        shopOwnerOrders,
         createOrder,
         updateOrderStatus,
         addProduct,
@@ -427,6 +768,7 @@ export const MarketplaceProvider: React.FC<{ children: React.ReactNode }> = ({ c
         quickSwitchUser,
         resetPrototype,
         lastPlacedOrder,
+        lastPlacedOrders,
         setLastPlacedOrder,
       }}
     >

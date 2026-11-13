@@ -12,6 +12,7 @@ import { ProfileView } from './components/ProfileView';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { ToastContainer } from './components/ToastContainer';
+import { ShopOwnerDashboard } from './components/ShopOwnerDashboard';
 
 const AppContent: React.FC = () => {
   const { currentUser, activeView } = useMarketplace();
@@ -20,6 +21,15 @@ const AppContent: React.FC = () => {
     return (
       <>
         <AuthPage />
+        <ToastContainer />
+      </>
+    );
+  }
+
+  if (currentUser.role === 'shop_owner') {
+    return (
+      <>
+        <ShopOwnerDashboard />
         <ToastContainer />
       </>
     );

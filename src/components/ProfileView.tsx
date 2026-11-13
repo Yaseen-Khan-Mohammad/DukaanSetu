@@ -21,7 +21,7 @@ import {
 export const ProfileView: React.FC = () => {
   const {
     currentUser,
-    setCurrentUser,
+    updateUserProfile,
     products,
     updateProduct,
     deleteProduct,
@@ -67,8 +67,7 @@ export const ProfileView: React.FC = () => {
     e.preventDefault();
     if (!currentUser) return;
 
-    const updatedUser = {
-      ...currentUser,
+    updateUserProfile({
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
@@ -76,11 +75,8 @@ export const ProfileView: React.FC = () => {
       shopName: role === 'shop_owner' || role === 'business_buyer' ? shopName.trim() : undefined,
       shopAddress: role === 'shop_owner' || role === 'business_buyer' ? shopAddress.trim() : undefined,
       savedAddress: savedAddress.trim(),
-    };
-
-    setCurrentUser(updatedUser);
+    });
     setIsEditingProfile(false);
-    showToast('Profile information updated successfully');
   };
 
   const handleStartEditProduct = (prod: Product) => {

@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  password?: string;
   role: UserRole;
   shopName?: string;
   shopAddress?: string;
@@ -35,7 +36,7 @@ export interface Product {
   shopName: string;
   shopAddress: string;
   shopPhone: string;
-  shopOwnerId?: string;
+  shopOwnerId: string;
   distanceKm: number;
   addedAt: string;
   status: 'available' | 'low_stock' | 'sold_out';
@@ -48,11 +49,20 @@ export interface CartItem {
 
 export type FulfillmentType = 'pickup' | 'delivery';
 export type PaymentMethod = 'cash_pickup' | 'cash_delivery' | 'upi_delivery';
-export type OrderStatus = 'Confirmed' | 'Ready for Pickup' | 'Out for Delivery' | 'Delivered';
+export type OrderStatus =
+  | 'Pending'
+  | 'Accepted'
+  | 'Processing'
+  | 'Ready for Pickup'
+  | 'Completed'
+  | 'Rejected';
 
 export interface Order {
   id: string;
   orderNumber: string;
+  buyerId: string;
+  buyerRole?: UserRole;
+  sellerId: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string;
